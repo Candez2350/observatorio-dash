@@ -19,14 +19,22 @@ const appData = {
 
 // Rota Principal (Início)
 app.get('/', (req, res) => {
-    res.render('layout', { page: 'inicio', data: appData });
+    if (req.query.partial) {
+        res.render('pages/inicio', { data: appData });
+    } else {
+        res.render('layout', { page: 'inicio', data: appData });
+    }
 });
 
 // Outras Rotas do Dashboard
-const pages = ['panorama', 'tipos', 'regiao', 'temporal', 'perfil', 'rede', 'publicacoes'];
+const pages = ['panorama', 'tipos', 'regiao', 'temporal', 'perfil', 'rede', 'publicacoes', 'falhas'];
 pages.forEach(page => {
     app.get(`/${page}`, (req, res) => {
-        res.render('layout', { page: page, data: appData });
+        if (req.query.partial) {
+            res.render(`pages/${page}`, { data: appData });
+        } else {
+            res.render('layout', { page: page, data: appData });
+        }
     });
 });
 

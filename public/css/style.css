@@ -138,6 +138,13 @@
             letter-spacing: -0.02em;
         }
 
+        .header-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
         /* ===== TAB NAVIGATION ===== */
         .tab-nav {
             display: flex;
@@ -181,31 +188,22 @@
 
         .header-right {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
         }
 
+        /* Remove year-selector as requested */
         .year-selector {
-            padding: 6px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-family: 'Antenna', 'Rubik', sans-serif;
-            font-size: 0.8rem;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .year-selector option {
-            background: var(--bg-card);
+            display: none;
         }
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
             position: relative;
             z-index: 1;
-            padding-top: 80px;
+            padding-top: 140px; /* Ajustado para o novo header */
+            transition: opacity 0.3s ease-out;
         }
 
         /* ===== HERO / LANDING ===== */

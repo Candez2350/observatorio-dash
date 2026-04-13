@@ -14,14 +14,15 @@ Este projeto é a plataforma interativa do **Observatório do Feminicídio do Ri
 
 O sistema está dividido em diferentes "páginas" (rotas) que apresentam contextos específicos dos dados:
 
-- **🏠 Início**: Apresentação principal, métricas gerais do ano (ocorrências, mulheres atendidas, medidas protetivas, casos de feminicídio).
-- **📊 Panorama**: Visão consolidada dos indicadores (tipos de violência, evolução mensal, distribuição).
-- **🔍 Tipos**: Classificação detalhada conforme a Lei Maria da Penha (psicológica, física, sexual).
-- **🗺️ Região**: Distribuição geográfica das ocorrências de feminicídio e outras violências contra as mulheres (por Unidade Federativa, incidência por região, taxas por 100 mil habitantes).
-- **📈 Temporal**: Série histórica das ocorrências de feminicídio e outras violências contra as mulheres (comparativos de anos anteriores, evolução de feminicídios).
-- **👤 Perfil**: Caracterização sociodemográfica das vítimas (faixa etária, escolaridade, ocupação, raça/cor).
-- **🤝 Rede**: Rede de atendimento e proteção (Centrais, Delegacias, Casas da Mulher, etc.) e canais de denúncia.
-- **📚 Publicações**: Relatórios, anuários, estudos especiais, cartilhas e manuais.
+- **🏠 Início**: Apresentação da plataforma e seus pilares.
+- **👤 Perfil e Contexto**: Visão consolidada dos indicadores e perfil sociodemográfico das vítimas.
+- **🚪 Portas de Entrada**: Análise dos canais de denúncia e primeiro contato com a rede.
+- **🤝 Rede Especializada**: Dados sobre os serviços especializados de atendimento.
+- **🆘 Apoio e Assistência**: Informações sobre a rede de assistência social e apoio psicossocial.
+- **🏥 Cuidado e Saúde**: Indicadores relacionados ao atendimento de saúde para vítimas de violência.
+- **🛡️ Proteção e Segurança**: Dados sobre medidas protetivas e o sistema de segurança pública.
+- **⚖️ Direitos e Justiça**: Informações sobre o percurso no sistema de justiça.
+- **⚠️ Falhas na Rede**: Análise de gargalos, descontinuidades e pontos críticos no atendimento.
 
 ## 🎨 Design e Identidade Visual
 
