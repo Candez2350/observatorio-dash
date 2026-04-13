@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <%- include('partials/head') %>
+</head>
+<body>
+    <!-- LOADING -->
+    <div class="loading-overlay" id="loader">
+        <div class="loader">
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+        </div>
+        <div class="loader-text">Carregando observatório...</div>
+    </div>
+
+    <!-- BG ANIMATION -->
+    <div class="bg-animation">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <!-- HEADER: Contains navigation and branding -->
+    <%- include('partials/header') %>
+
+    <!-- MAIN CONTENT: Carrega a página conforme rota requisitada -->
+    <main class="main-content">
+        <%- include(`pages/${page}`) %>
+    </main>
+
+    <script src="/js/dashboard-charts.js"></script>
+</body>
+</html>

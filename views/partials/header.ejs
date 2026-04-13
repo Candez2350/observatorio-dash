@@ -1,0 +1,43 @@
+<header class="header" id="header">
+    <div class="header-left">
+        <img src="/images/Logo.png" alt="Logo Observatório" class="logo-img" id="logoImg">
+        <div>
+            <div class="header-title">Observatório do Feminicídio</div>
+            <div class="header-subtitle">do Rio de Janeiro</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <nav class="tab-nav" id="tabNav">
+            <a href="/" class="tab-btn <%= page === 'inicio' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">🏠</span>Início
+            </a>
+            <a href="/panorama" class="tab-btn <%= page === 'panorama' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">📊</span>Panorama
+            </a>
+            <a href="/tipos" class="tab-btn <%= page === 'tipos' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">🔍</span>Tipos
+            </a>
+            <a href="/regiao" class="tab-btn <%= page === 'regiao' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">🗺️</span>Região
+            </a>
+            <a href="/temporal" class="tab-btn <%= page === 'temporal' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">📈</span>Temporal
+            </a>
+            <a href="/perfil" class="tab-btn <%= page === 'perfil' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">👤</span>Perfil
+            </a>
+            <a href="/rede" class="tab-btn <%= page === 'rede' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">🤝</span>Rede
+            </a>
+            <a href="/publicacoes" class="tab-btn <%= page === 'publicacoes' ? 'active' : '' %>" style="text-decoration: none; display: inline-flex; align-items: center;">
+                <span class="tab-icon">📚</span>Publicações
+            </a>
+        </nav>
+        <select class="year-selector" id="yearSelector">
+            <option value="2024" <%= data.anoSelecionado === 2024 ? 'selected' : '' %>>2024</option>
+            <option value="2023" <%= data.anoSelecionado === 2023 ? 'selected' : '' %>>2023</option>
+            <option value="2022" <%= data.anoSelecionado === 2022 ? 'selected' : '' %>>2022</option>
+            <option value="2021" <%= data.anoSelecionado === 2021 ? 'selected' : '' %>>2021</option>
+        </select>
+    </div>
+</header>
