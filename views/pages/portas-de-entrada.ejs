@@ -1,0 +1,430 @@
+<div class="tab-content active" id="tab-portas-de-entrada" style="animation: none; margin-top: -15px;">
+    <!-- Cabeçalho -->
+    <div class="section-header" style="margin-bottom: 10px; padding-top: 10px;">
+        <h2 style="margin-top: 0;">🚪 Canais de Entrada</h2>
+        <p style="margin-bottom: 0;">Análise dos canais de denúncia, primeiros contatos (Ligue 190 e Disque 180) e perfil de vítimas e agressores.</p>
+    </div>
+
+    <!-- Controles (Filtros e View Mode) -->
+    <div style="background: #ffffff; padding: 10px 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border: 1px solid #eaeaea;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="anoFilterPortas" style="font-weight: 600; color: var(--primary); margin: 0;">📅 Ano:</label>
+            <select id="anoFilterPortas" onchange="updatePortasView()" style="padding: 4px 10px; border-radius: 6px; border: 1px solid #d1d1d1; background: #f9f9f9; color: #333; font-weight: 500; outline: none; cursor: pointer;">
+                <option value="todos">Todos os Anos</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="municipioFilterPortas" style="font-weight: 600; color: var(--primary); margin: 0;">📍 Município:</label>
+            <select id="municipioFilterPortas" onchange="updatePortasView()" style="padding: 4px 10px; border-radius: 6px; border: 1px solid #d1d1d1; background: #f9f9f9; color: #333; font-weight: 500; outline: none; cursor: pointer; min-width: 200px;">
+                <option value="todos">Estado do Rio de Janeiro (Todos)</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="viewModeFilterPortas" style="font-weight: 600; color: var(--primary); margin: 0;">👁️ Visualização:</label>
+            <select id="viewModeFilterPortas" onchange="toggleViewModePortas()" style="padding: 4px 10px; border-radius: 6px; border: 1px solid #d1d1d1; background: #f9f9f9; color: #333; font-weight: 500; outline: none; cursor: pointer;">
+                <option value="charts">Gráficos Analíticos</option>
+                <option value="tables">Tabelas de Dados (Exportação)</option>
+            </select>
+        </div>
+        <div style="flex-grow: 1; text-align: right;">
+            <span style="font-size: 0.85em; color: #666; font-style: italic;">*Perfil, Relação e Natureza são consolidações estaduais gerais.</span>
+        </div>
+    </div>
+
+    <!-- Layout Dividido: Esquerda (KPIs) / Direita (Gráficos) -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        
+        <!-- Coluna Esquerda: KPIs Analíticos -->
+        <div style="flex: 1; min-width: 260px; max-width: 320px; display: flex; flex-direction: column; gap: 15px;" id="kpiContainerPortas">
+            <!-- Os KPIs serão injetados dinamicamente via JS -->
+        </div>
+
+        <!-- Coluna Direita: Gráficos e Tabelas -->
+        <div style="flex: 3; min-width: 600px; width: 100%;">
+            
+            <!-- Container dos Gráficos -->
+            <div id="portasChartsView">
+                <div class="two-col" style="gap: 15px;">
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">⚠️</span> Natureza da Violência (190) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartNatureza190"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">🤝</span> Relação Agressor/Vítima (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartRelacao180"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Confronto: Vítima x Agressor (Idade) -->
+                <div style="margin-top: 15px;" class="two-col" style="gap: 15px;">
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">👤</span> Vítima: Idade (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartVitimaIdade"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">😠</span> Agressor: Idade (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartAgressorIdade"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confronto: Vítima x Agressor (Raça/Cor) -->
+                <div style="margin-top: 15px;" class="two-col" style="gap: 15px;">
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">⚫</span> Vítima: Raça/Cor (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartVitimaRaca"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">⚫</span> Agressor: Raça/Cor (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartAgressorRaca"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confronto: Vítima x Agressor (Grau de Instrução) -->
+                <div style="margin-top: 15px;" class="two-col" style="gap: 15px;">
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">🎓</span> Vítima: Grau de Instrução (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartVitimaInstrucao"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">🎓</span> Agressor: Grau de Instrução (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartAgressorInstrucao"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outros Perfis -->
+                <div style="margin-top: 15px;" class="two-col" style="gap: 15px;">
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">💵</span> Vítima: Faixa de Renda (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartVitimaRenda"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 10px 15px;">
+                        <div class="chart-title" style="font-size: 1em; margin-bottom: 5px;"><span class="chart-icon">♂️</span> Agressor: Sexo (180) - Estadual</div>
+                        <div class="chart-wrapper" style="height: 220px;">
+                            <canvas id="chartAgressorSexo"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container das Tabelas -->
+            <div id="portasTablesView" style="display: none;">
+                <div id="tablesContainerPortas">
+                    <!-- Gerado dinamicamente -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    var rawPortasData = JSON.parse(`<%- JSON.stringify({
+        evolucao190: data.evolucao190 || [],
+        evolucao180: data.evolucao180 || [],
+        municipios190: data.municipios190 || [],
+        municipios180: data.municipios180 || [],
+        tipoViolencia190: data.tipoViolencia190 || [],
+        perfilVitima: data.perfilVitima || [],
+        perfilAgressor: data.perfilAgressor || [],
+        relacaoAgressorVitima: data.relacaoAgressorVitima || []
+    }).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/</g, '\\u003c') %>`);
+    
+    var currentPortasTableData = window.currentPortasTableData || {};
+    var activePortasCharts = window.activePortasCharts || {};
+
+    var colorsBase = ['#3521a4', '#b27ab3', '#ceaacf', '#c33f49', '#d57980', '#1d1d1b', '#f7b2b7', '#9e2a2b', '#540b0e', '#3a0ca3'];
+
+    function initPortas() {
+        populatePortasFilters();
+        updatePortasView();
+    }
+
+    function populatePortasFilters() {
+        const anos = new Set();
+        const municipios = new Set();
+
+        // Extrai anos de todos os datasets
+        Object.values(rawPortasData).forEach(dataset => {
+            dataset.forEach(row => {
+                if (row.ano) anos.add(row.ano);
+                if (row.municipio && row.municipio !== 'Não informado') municipios.add(row.municipio);
+            });
+        });
+        
+        const selAno = document.getElementById('anoFilterPortas');
+        Array.from(anos).sort((a,b) => b - a).forEach(ano => {
+            const op = document.createElement('option');
+            op.value = ano; op.textContent = ano;
+            selAno.appendChild(op);
+        });
+
+        const selMun = document.getElementById('municipioFilterPortas');
+        Array.from(municipios).sort().forEach(mun => {
+            const op = document.createElement('option');
+            op.value = mun; op.textContent = mun;
+            selMun.appendChild(op);
+        });
+    }
+
+    function toggleViewModePortas() {
+        const mode = document.getElementById('viewModeFilterPortas').value;
+        if (mode === 'charts') {
+            document.getElementById('portasChartsView').style.display = 'block';
+            document.getElementById('portasTablesView').style.display = 'none';
+        } else {
+            document.getElementById('portasChartsView').style.display = 'none';
+            document.getElementById('portasTablesView').style.display = 'block';
+        }
+    }
+
+    function sortPortasData(dataArray, type) {
+        if (type === 'idade') {
+            return dataArray.sort((a, b) => {
+                const matchA = a.label.match(/\d+/);
+                const numA = matchA ? parseInt(matchA[0]) : 0;
+                const matchB = b.label.match(/\d+/);
+                const numB = matchB ? parseInt(matchB[0]) : 0;
+                return numA - numB;
+            });
+        }
+        if (type === 'raca') {
+            return dataArray.sort((a, b) => a.label.localeCompare(b.label));
+        }
+        return dataArray.sort((a, b) => b.total - a.total);
+    }
+
+    function sumMetric(dataset, metric, ano, mun = 'todos') {
+        return dataset.reduce((acc, row) => {
+            if (ano !== 'todos' && String(row.ano) !== String(ano)) return acc;
+            if (mun !== 'todos' && row.municipio && row.municipio !== mun) return acc;
+            return acc + Number(row[metric] || 0);
+        }, 0);
+    }
+
+    function aggregateDataPortas(dataset, metricKey, labelKey, ano, mun = 'todos', dimFilter = null, type = 'default') {
+        const result = {};
+        dataset.forEach(row => {
+            if (ano !== 'todos' && String(row.ano) !== String(ano)) return;
+            if (mun !== 'todos' && row.municipio && row.municipio !== mun) return;
+            if (dimFilter && row.dimensao !== dimFilter) return;
+
+            let cat = row[labelKey] || "Indefinido";
+            
+            // Ignorar NDs e Não Informados
+            const catLower = cat.toLowerCase();
+            if (catLower.includes('nd') || catLower.includes('n/d') || catLower.includes('não informad') || cat === 'Sem rendimento') {
+                return;
+            }
+
+            if (!result[cat]) result[cat] = 0;
+            result[cat] += Number(row[metricKey] || 0);
+        });
+        
+        let rawArray = Object.keys(result).map(k => ({ label: k, total: result[k] }));
+        return sortPortasData(rawArray, type);
+    }
+
+    function drawChartPortas(canvasId, type, title, dataArray, colorConfig) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        
+        if (activePortasCharts[canvasId]) {
+            activePortasCharts[canvasId].destroy();
+        }
+
+        const labels = dataArray.map(d => d.label);
+        const values = dataArray.map(d => d.total);
+        let bgColors = Array.isArray(colorConfig) ? colorConfig : Array(labels.length).fill(colorConfig);
+
+        activePortasCharts[canvasId] = new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: title, data: values,
+                    backgroundColor: bgColors, borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: (type === 'pie' || type === 'doughnut'), position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let dataset = context.chart.data.datasets[context.datasetIndex].data;
+                                let total = dataset.reduce((a, c) => a + c, 0);
+                                let val = context.raw;
+                                let pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                                return context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut' 
+                                    ? context.label + ': ' + val.toLocaleString('pt-BR') + ' (' + pct + ')'
+                                    : context.label + ': ' + val.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                scales: type === 'bar' ? {
+                    y: { beginAtZero: true, display: true },
+                    x: { display: false }
+                } : {}
+            }
+        });
+    }
+
+    function createTablePortas(id, title, icon, dataArray) {
+        let rows = dataArray.map(row => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${row.label}</td>
+                <td style="padding: 10px; font-weight:bold;">${row.total.toLocaleString('pt-BR')}</td>
+            </tr>
+        `).join('');
+
+        return `
+        <div class="chart-container" style="margin-bottom: 20px; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0; font-size: 1.1em;"><span class="chart-icon">${icon}</span> ${title}</h3>
+                <button onclick="downloadCSVPortas('${title.replace(/\\s/g, '_')}', '${id}')" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">📥 Baixar CSV</button>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95em;">
+                <thead><tr style="border-bottom: 2px solid var(--primary); color: var(--primary);">
+                    <th style="padding: 10px;">Categoria</th>
+                    <th style="padding: 10px;">Total</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    function updatePortasKPIs(tot190, tot180, natPrin, relPrin, vitIdade, vitRaca, agrRaca,agrSexo, mun) {
+        const kpiC = document.getElementById('kpiContainerPortas');
+        kpiC.innerHTML = '';
+        
+        const locName = mun === 'todos' ? 'No Estado' : mun;
+
+        const kpis = [
+            { icon: '📞', title: 'Chamadas 190', value: tot190.toLocaleString('pt-BR'), desc: `PMERJ (${locName})` },
+            { icon: '🎧', title: 'Denúncias 180', value: tot180.toLocaleString('pt-BR'), desc: `Central (${locName})` },
+            { icon: '⚠️', title: 'Natureza 190', value: natPrin ? natPrin.label : '-', desc: natPrin ? `${natPrin.total.toLocaleString('pt-BR')} casos` : '' },
+            { icon: '🤝', title: 'Relação', value: relPrin ? relPrin.label : '-', desc: relPrin ? `${relPrin.total.toLocaleString('pt-BR')} casos` : '' },
+            { icon: '🎂', title: 'Idade Vítima', value: vitIdade ? vitIdade.label : '-', desc: 'Mais frequente no 180' },
+            { icon: '⚫', title: 'Raça Vítima', value: vitRaca ? vitRaca.label : '-', desc: 'Mais frequente no 180' },
+            { icon: '⚫', title: 'Raça Agressor', value: agrRaca ? agrRaca.label : '-', desc: 'Mais frequente no 180' },
+            { icon: '♂️', title: 'Sexo Agressor', value: agrSexo ? agrSexo.label : '-', desc: 'Mais frequente no 180' }
+        ];
+
+        kpis.forEach(kpi => {
+            kpiC.innerHTML += `
+                <div style="background: #fff; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="font-size: 1.5em;">${kpi.icon}</span>
+                        <h4 style="margin: 0; color: #666; font-size: 0.9em; text-transform: uppercase;">${kpi.title}</h4>
+                    </div>
+                    <div style="font-size: 1.6em; font-weight: bold; color: #1d1d1b;">${kpi.value}</div>
+                    <div style="font-size: 0.8em; color: #888; margin-top: 5px;">${kpi.desc}</div>
+                </div>
+            `;
+        });
+    }
+
+    function updatePortasView() {
+        const ano = document.getElementById('anoFilterPortas').value;
+        const mun = document.getElementById('municipioFilterPortas').value;
+        
+        // Dados para KPI diretos
+        const tot190 = sumMetric(rawPortasData.municipios190, 'qtd_chamadas', ano, mun);
+        const tot180 = sumMetric(rawPortasData.municipios180, 'total_denuncias', ano, mun);
+        
+        // Agregações Gerais
+        const dNatureza = aggregateDataPortas(rawPortasData.tipoViolencia190, 'qtd_chamadas', 'tipo_violencia', ano);
+        const dRelacao = aggregateDataPortas(rawPortasData.relacaoAgressorVitima, 'total_denuncias', 'relacao', ano);
+        
+        // Perfil da Vítima
+        const dVitimaIdade = aggregateDataPortas(rawPortasData.perfilVitima, 'total_denuncias', 'categoria', ano, 'todos', 'faixa_etaria', 'idade');
+        const dVitimaRaca = aggregateDataPortas(rawPortasData.perfilVitima, 'total_denuncias', 'categoria', ano, 'todos', 'raca_cor', 'raca');
+        const dVitimaRenda = aggregateDataPortas(rawPortasData.perfilVitima, 'total_denuncias', 'categoria', ano, 'todos', 'faixa_renda');
+        const dVitimaInstrucao = aggregateDataPortas(rawPortasData.perfilVitima, 'total_denuncias', 'categoria', ano, 'todos', 'grau_instrucao');
+        
+        // Perfil do Agressor
+        const dAgressorIdade = aggregateDataPortas(rawPortasData.perfilAgressor, 'total_denuncias', 'categoria', ano, 'todos', 'faixa_etaria', 'idade');
+        const dAgressorSexo = aggregateDataPortas(rawPortasData.perfilAgressor, 'total_denuncias', 'categoria', ano, 'todos', 'sexo');
+        const dAgressorRaca = aggregateDataPortas(rawPortasData.perfilAgressor, 'total_denuncias', 'categoria', ano, 'todos', 'raca_cor', 'raca');
+        const dAgressorInstrucao = aggregateDataPortas(rawPortasData.perfilAgressor, 'total_denuncias', 'categoria', ano, 'todos', 'grau_instrucao');
+
+        // Salvar tabelas globais
+        currentPortasTableData = {
+            nat: dNatureza, rel: dRelacao, 
+            vIdade: dVitimaIdade, vRaca: dVitimaRaca, vRenda: dVitimaRenda, vInstrucao: dVitimaInstrucao,
+            aIdade: dAgressorIdade, aSexo: dAgressorSexo, aRaca: dAgressorRaca, aInstrucao: dAgressorInstrucao
+        };
+
+        // Renderiza KPIs
+        updatePortasKPIs(tot190, tot180, dNatureza[0], dRelacao[0], [...dVitimaIdade].sort((a,b)=>b.total-a.total)[0], [...dVitimaRaca].sort((a,b)=>b.total-a.total)[0], [...dAgressorRaca].sort((a,b)=>b.total-a.total)[0], [...dAgressorSexo].sort((a,b)=>b.total-a.total)[0], mun);
+
+        // Gráficos Pizza/Rosca (Natureza e Relação)
+        drawChartPortas('chartNatureza190', 'pie', 'Natureza da Violência', dNatureza, colorsBase);
+        drawChartPortas('chartRelacao180', 'doughnut', 'Relação Vítima/Agressor', dRelacao, colorsBase);
+        
+        // Gráficos de Confronto Vítima vs Agressor
+        drawChartPortas('chartVitimaIdade', 'bar', 'Idade da Vítima', dVitimaIdade, colorsBase[0]);
+        drawChartPortas('chartAgressorIdade', 'bar', 'Idade do Agressor', dAgressorIdade, colorsBase[2]);
+
+        drawChartPortas('chartVitimaRaca', 'doughnut', 'Raça/Cor da Vítima', dVitimaRaca, colorsBase);
+        drawChartPortas('chartAgressorRaca', 'doughnut', 'Raça/Cor do Agressor', dAgressorRaca, colorsBase);
+
+        drawChartPortas('chartVitimaInstrucao', 'bar', 'Grau de Instrução (Vítima)', dVitimaInstrucao, colorsBase[0]);
+        drawChartPortas('chartAgressorInstrucao', 'bar', 'Grau de Instrução (Agressor)', dAgressorInstrucao, colorsBase[1]);
+
+        // Perfil Adicional e Renda
+        drawChartPortas('chartVitimaRenda', 'pie', 'Faixa de Renda (Vítima)', dVitimaRenda, colorsBase);
+        drawChartPortas('chartAgressorSexo', 'pie', 'Sexo (Agressor)', dAgressorSexo, colorsBase);
+
+        // Renderiza Tabelas
+        document.getElementById('tablesContainerPortas').innerHTML = 
+            createTablePortas('nat', 'Natureza da Violência (190)', '⚠️', dNatureza) +
+            createTablePortas('rel', 'Relação Agressor/Vítima (180)', '🤝', dRelacao) +
+            createTablePortas('vIdade', 'Vítima: Idade', '🎂', dVitimaIdade) +
+            createTablePortas('aIdade', 'Agressor: Idade', '🎂', dAgressorIdade) +
+            createTablePortas('vRaca', 'Vítima: Raça/Cor', '⚫', dVitimaRaca) +
+            createTablePortas('aRaca', 'Agressor: Raça/Cor', '⚫', dAgressorRaca) +
+            createTablePortas('vInstrucao', 'Vítima: Grau de Instrução', '🎓', dVitimaInstrucao) +
+            createTablePortas('aInstrucao', 'Agressor: Grau de Instrução', '🎓', dAgressorInstrucao) +
+            createTablePortas('vRenda', 'Vítima: Faixa de Renda', '💵', dVitimaRenda) +
+            createTablePortas('aSexo', 'Agressor: Sexo', '♂️', dAgressorSexo);
+    }
+
+    function downloadCSVPortas(filename, dataId) {
+        const dataArray = currentPortasTableData[dataId];
+        if (!dataArray || dataArray.length === 0) { alert("Não há dados para exportar."); return; }
+        let csvContent = "data:text/csv;charset=utf-8,Categoria,Total\n";
+        dataArray.forEach(row => {
+            const safeLabel = String(row.label).replace(/,/g, " ");
+            csvContent += `${safeLabel},${row.total}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${filename}.csv`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    setTimeout(initPortas, 150);
+</script>

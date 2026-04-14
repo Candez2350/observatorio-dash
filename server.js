@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 // Outras Rotas do Dashboard
-const pages = ['panorama', 'tipos', 'regiao', 'temporal', 'rede', 'publicacoes', 'falhas'];
+const pages = ['panorama', 'regiao', 'temporal', 'rede', 'publicacoes', 'falhas'];
 pages.forEach(page => {
     app.get(`/${page}`, (req, res) => {
         if (req.query.partial) {
@@ -39,6 +39,94 @@ pages.forEach(page => {
 });
 
 const db = require('./db');
+
+app.get('/portas-de-entrada', async (req, res) => {
+  try {
+    const [
+      qEvolucao190,
+      qEvolucao180,
+      qMunicipios190,
+      qMunicipios180,
+      qTipoViolencia190,
+      qPerfilVitima,
+      qPerfilAgressor,
+      qRelacao
+    ] = await Promise.all([
+      db.pool.query(`
+        SELECT reference_date_sk AS data_referencia, ano, mes, COUNT(call_sk) AS qtd_chamadas 
+        FROM marts.fct_ligue_190 
+        GROUP BY reference_date_sk, ano, mes 
+        ORDER BY reference_date_sk ASC;
+      `),
+      db.pool.query(`
+        SELECT ano, SUM(denuncias) AS total_denuncias, SUM(violencias) AS total_violencias 
+        FROM marts.fct_disque180_municipal 
+        GROUP BY ano 
+        ORDER BY ano ASC;
+      `),
+      db.pool.query(`
+        SELECT ano, municipio, COUNT(call_sk) AS qtd_chamadas 
+        FROM marts.fct_ligue_190 
+        GROUP BY ano, municipio 
+        ORDER BY ano DESC, qtd_chamadas DESC;
+      `),
+      db.pool.query(`
+        SELECT ano, municipio, SUM(denuncias) AS total_denuncias 
+        FROM marts.fct_disque180_municipal 
+        GROUP BY ano, municipio 
+        ORDER BY ano DESC, total_denuncias DESC;
+      `),
+      db.pool.query(`
+        SELECT ano, tipo_violencia, COUNT(call_sk) AS qtd_chamadas 
+        FROM marts.fct_ligue_190 
+        GROUP BY ano, tipo_violencia 
+        ORDER BY ano DESC, qtd_chamadas DESC;
+      `),
+      db.pool.query(`
+        SELECT ano, dimensao, categoria, SUM(denuncias) AS total_denuncias 
+        FROM marts.fct_disque180_perfil 
+        WHERE sujeito = 'vitima' 
+        GROUP BY ano, dimensao, categoria
+        ORDER BY ano DESC, dimensao ASC, total_denuncias DESC;
+      `),
+      db.pool.query(`
+        SELECT ano, dimensao, categoria, SUM(denuncias) AS total_denuncias 
+        FROM marts.fct_disque180_perfil 
+        WHERE sujeito = 'agressor' 
+        GROUP BY ano, dimensao, categoria
+        ORDER BY ano DESC, dimensao ASC, total_denuncias DESC;
+      `),
+      db.pool.query(`
+        SELECT ano, categoria AS relacao, SUM(denuncias) AS total_denuncias 
+        FROM marts.fct_disque180_perfil 
+        WHERE sujeito = 'relacao' AND dimensao = 'relacao_agressor_vitima' 
+        GROUP BY ano, categoria
+        ORDER BY ano DESC, total_denuncias DESC;
+      `)
+    ]);
+
+    const contextData = {
+      ...appData,
+      evolucao190: qEvolucao190.rows,
+      evolucao180: qEvolucao180.rows,
+      municipios190: qMunicipios190.rows,
+      municipios180: qMunicipios180.rows,
+      tipoViolencia190: qTipoViolencia190.rows,
+      perfilVitima: qPerfilVitima.rows,
+      perfilAgressor: qPerfilAgressor.rows,
+      relacaoAgressorVitima: qRelacao.rows
+    };
+
+    if (req.query.partial) {
+        res.render('pages/portas-de-entrada', { data: contextData });
+    } else {
+        res.render('layout', { page: 'portas-de-entrada', data: contextData });
+    }
+  } catch (err) {
+    console.error("Erro ao carregar os dados de Portas de Entrada:", err);
+    res.status(500).send("Erro interno ao carregar o painel");
+  }
+});
 
 app.get('/perfil', async (req, res) => {
   try {

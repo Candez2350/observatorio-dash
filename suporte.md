@@ -37,7 +37,7 @@ Observatorio/
     └── pages/                # O conteúdo individual de cada aba (injetado no layout.ejs).
         ├── inicio.ejs
         ├── panorama.ejs
-        ├── tipos.ejs
+        ├── portas-de-entrada.ejs # Página de Canais de Denúncia (Integrada ao DB NeonDB).
         ├── regiao.ejs
         ├── temporal.ejs
         ├── perfil.ejs        # Exemplo de página conectada ao banco, com filtros dinâmicos e exportação CSV.

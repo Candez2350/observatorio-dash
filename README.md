@@ -17,7 +17,7 @@ O sistema está dividido em diferentes "páginas" (rotas) que apresentam context
 
 - **🏠 Início**: Apresentação da plataforma e seus pilares.
 - **👤 Perfil e Contexto**: Visão consolidada dos indicadores e perfil sociodemográfico das vítimas. **(Integrado ao DB com filtros e exportação)**
-- **🚪 Portas de Entrada**: Análise dos canais de denúncia e primeiro contato com a rede.
+- **🚪 Portas de Entrada**: Análise dos canais de denúncia (Ligue 190 e Disque 180) e perfil de envolvidos. **(Integrado ao DB com filtros dinâmicos)**
 - **🤝 Rede Especializada**: Dados sobre os serviços especializados de atendimento.
 - **🆘 Apoio e Assistência**: Informações sobre a rede de assistência social e apoio psicossocial.
 - **🏥 Cuidado e Saúde**: Indicadores relacionados ao atendimento de saúde para vítimas de violência.
