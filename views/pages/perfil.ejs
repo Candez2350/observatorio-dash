@@ -1,37 +1,369 @@
 <div class="tab-content active" id="tab-perfil" style="animation: none;">
-<div class="section-header">
-            <h2>👤 Perfil das Vítimas</h2>
-            <p>Caracterização sociodemográfica das mulheres atendidas.</p>
+    <!-- O padding top menor ajuda a aproximar o conteúdo do cabeçalho -->
+    <div class="section-header" style="margin-bottom: 15px; padding-top: 5px;">
+        <h2>👤 PANORAMA SOCIODEMOGRÁFICO</h2>
+        <p>Caracterização sociodemográfica e contexto das mulheres do Rio de Janeiro.</p>
+    </div>
+
+    <!-- Controles (Filtros e View Mode) - Com visual mais leve e moderno -->
+    <div style="background: #ffffff; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border: 1px solid #eaeaea;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="municipioFilter" style="font-weight: 600; color: var(--primary); margin: 0;">📍 Filtrar por Município:</label>
+            <select id="municipioFilter" onchange="updatePerfilView()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d1d1; background: #f9f9f9; color: #333; font-weight: 500; outline: none; cursor: pointer; min-width: 200px;">
+                <option value="todos">Estado do Rio de Janeiro (Todos)</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="viewModeFilter" style="font-weight: 600; color: var(--primary); margin: 0;">👁️ Visualização:</label>
+            <select id="viewModeFilter" onchange="toggleViewMode()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d1d1; background: #f9f9f9; color: #333; font-weight: 500; outline: none; cursor: pointer;">
+                <option value="charts">Gráficos Analíticos</option>
+                <option value="tables">Tabelas de Dados (Exportação)</option>
+            </select>
+        </div>
+        <div style="flex-grow: 1; text-align: right;">
+            <span style="font-size: 0.85em; color: #666; font-style: italic;">*Dados de Raça/Idade baseados no Censo 2022. Renda baseada no CadÚnico 2024.</span>
+        </div>
+    </div>
+
+    <!-- Layout Dividido: Esquerda (KPIs) / Direita (Gráficos) -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        
+        <!-- Coluna Esquerda: KPIs Analíticos -->
+        <div style="flex: 1; min-width: 260px; max-width: 320px; display: flex; flex-direction: column; gap: 15px;" id="kpiContainer">
+            <!-- Os KPIs serão injetados dinamicamente via JS -->
         </div>
 
-        <div class="two-col">
-            <div class="chart-container">
-                <div class="chart-title"><span class="chart-icon">🎂</span> Faixa Etária</div>
-                <div class="chart-wrapper tall">
-                    <canvas id="perfilAgeChart"></canvas>
+        <!-- Coluna Direita: Gráficos e Tabelas -->
+        <div style="flex: 3; min-width: 600px; width: 100%;">
+            
+            <!-- Container dos Gráficos -->
+            <div id="perfilChartsView">
+                <div class="two-col">
+                    <div class="chart-container" style="padding: 15px;">
+                        <div class="chart-title" style="font-size: 1.1em;">Distribuição por Idade</div>
+                        <div class="chart-wrapper tall">
+                            <canvas id="dynamicAgeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 15px;">
+                        <div class="chart-title" style="font-size: 1.1em;">Autodeclaração de Raça/Cor</div>
+                        <div class="chart-wrapper tall">
+                            <canvas id="dynamicRaceChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title"><span class="chart-icon">🎓</span> Escolaridade</div>
-                <div class="chart-wrapper tall">
-                    <canvas id="perfilEducationChart"></canvas>
-                </div>
-            </div>
-        </div>
 
-        <div style="margin-top: 20px;" class="two-col">
-            <div class="chart-container">
-                <div class="chart-title"><span class="chart-icon">💼</span> Ocupação</div>
-                <div class="chart-wrapper">
-                    <canvas id="perfilWorkChart"></canvas>
+                <div style="margin-top: 20px;" class="two-col">
+                    <div class="chart-container" style="padding: 15px;">
+                        <div class="chart-title" style="font-size: 1.1em;"> Nível de Escolaridade</div>
+                        <div class="chart-wrapper">
+                            <canvas id="dynamicEducationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="padding: 15px;">
+                        <div class="chart-title" style="font-size: 1.1em;"> Faixa de Renda </div>
+                        <div class="chart-wrapper">
+                            <canvas id="dynamicIncomeChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="chart-container">
-                <div class="chart-title"><span class="chart-icon">⚫</span> Raça/Cor</div>
-                <div class="chart-wrapper">
-                    <canvas id="perfilRaceChart"></canvas>
+
+            <!-- Container das Tabelas -->
+            <div id="perfilTablesView" style="display: none;">
+                <div id="tablesContainer">
+                    <!-- Gerado dinamicamente -->
                 </div>
             </div>
+
         </div>
     </div>
 </div>
+
+<script>
+    // Correção do erro de parse (EJS injeta dados sem quebrar tags de script usando replace)
+    const rawPerfilData = JSON.parse(`<%- JSON.stringify({
+        dadosTotal: data.dadosTotal || [],
+        dadosIdade: data.dadosIdade || [],
+        dadosRaca: data.dadosRaca || [],
+        dadosEscolaridade: data.dadosEscolaridade || [],
+        dadosRenda: data.dadosRenda || [],
+        dadosFamilia: data.dadosFamilia || []
+    }).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/</g, '\\u003c') %>`);
+    
+    let currentTableData = {};
+    let activeCharts = {};
+
+    const chartColors = ['#3521a4', '#b27ab3', '#ceaacf', '#c33f49', '#d57980', '#1d1d1b', '#f7b2b7', '#9e2a2b', '#540b0e', '#3a0ca3'];
+
+    function initPerfil() {
+        populateMunicipioDropdown();
+        updatePerfilView();
+    }
+
+    function populateMunicipioDropdown() {
+        const municipios = new Set();
+        // Extrai todos os municípios únicos de todos os datasets
+        Object.values(rawPerfilData).forEach(dataset => {
+            dataset.forEach(row => {
+                if (row.municipio && row.municipio !== 'Não informado') municipios.add(row.municipio);
+            });
+        });
+        
+        const select = document.getElementById('municipioFilter');
+        Array.from(municipios).sort().forEach(mun => {
+            const option = document.createElement('option');
+            option.value = mun;
+            option.textContent = mun;
+            select.appendChild(option);
+        });
+    }
+
+    function toggleViewMode() {
+        const mode = document.getElementById('viewModeFilter').value;
+        if (mode === 'charts') {
+            document.getElementById('perfilChartsView').style.display = 'block';
+            document.getElementById('perfilTablesView').style.display = 'none';
+        } else {
+            document.getElementById('perfilChartsView').style.display = 'none';
+            document.getElementById('perfilTablesView').style.display = 'block';
+        }
+    }
+
+    // Função de ordenação personalizada
+    function sortData(dataArray, type) {
+        if (type === 'idade') {
+            const ageOrder = [
+                '0 a 4 anos', '5 a 9 anos', '10 a 14 anos', '15 a 19 anos', '20 a 24 anos',
+                '25 a 29 anos', '30 a 34 anos', '35 a 39 anos', '40 a 44 anos', '45 a 49 anos',
+                '50 a 54 anos', '55 a 59 anos', '60 a 64 anos', '65 a 69 anos', '70 a 74 anos',
+                '75 a 79 anos', '80 a 84 anos', '85 a 89 anos', '90 a 94 anos', '95 a 99 anos',
+                '100 anos ou mais'
+            ];
+            return dataArray.sort((a, b) => {
+                let idxA = ageOrder.indexOf(a.label);
+                let idxB = ageOrder.indexOf(b.label);
+                // Se a label não for encontrada no array fixo, manda pro final (idx grande)
+                if(idxA === -1) idxA = 999;
+                if(idxB === -1) idxB = 999;
+                return idxA - idxB;
+            });
+        }
+        if (type === 'raca') {
+            // Ordem alfabética
+            return dataArray.sort((a, b) => a.label.localeCompare(b.label));
+        }
+        if (type === 'escolaridade') {
+            const escOrder = ['Sem Nível', 'Fundamental Completo', 'Médio Completo', 'Superior'];
+            return dataArray.sort((a, b) => escOrder.indexOf(a.label) - escOrder.indexOf(b.label));
+        }
+        // Padrão: Ordena por total (decrescente)
+        return dataArray.sort((a, b) => b.total - a.total);
+    }
+
+    function aggregateData(dataset, municipio, type = 'default') {
+        const result = {};
+        
+        const escMap = {
+            'Sem instrução e fundamental incompleto': 'Sem Nível',
+            'Fundamental completo e médio incompleto': 'Fundamental Completo',
+            'Médio completo e superior incompleto': 'Médio Completo',
+            'Superior completo': 'Superior'
+        };
+
+        const famMap = {
+            'uniparental_com_filhos': 'Mães Solo'
+        };
+
+        dataset.forEach(row => {
+            // Se um município específico for selecionado, ignora os outros
+            if (municipio !== 'todos' && row.municipio !== municipio) return;
+            
+            let cat = row.faixa_etaria || row.raca || row.nivel_instrucao || row.faixa_renda || row.arranjo_familiar || "Total";
+            
+            // Renomeia as categorias
+            if (type === 'escolaridade' && escMap[cat]) cat = escMap[cat];
+            if (type === 'familia' && famMap[cat]) cat = famMap[cat];
+
+            if (!result[cat]) {
+                result[cat] = 0;
+            }
+            result[cat] += Number(row.total || row.total_mulheres || 0);
+        });
+
+        let rawArray = Object.keys(result).map(key => ({ label: key, total: result[key] }));
+        return sortData(rawArray, type);
+    }
+
+    function drawChart(canvasId, type, title, dataArray, colorConfig) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        
+        if (activeCharts[canvasId]) {
+            activeCharts[canvasId].destroy();
+        }
+
+        const labels = dataArray.map(d => d.label);
+        const values = dataArray.map(d => d.total);
+        
+        let bgColors = Array.isArray(colorConfig) ? colorConfig : Array(labels.length).fill(colorConfig);
+
+        activeCharts[canvasId] = new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: title,
+                    data: values,
+                    backgroundColor: bgColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: type === 'pie' || type === 'doughnut',
+                        position: 'right',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let dataset = context.chart.data.datasets[context.datasetIndex].data;
+                                let total = dataset.reduce((acc, curr) => acc + curr, 0);
+                                let value = context.raw;
+                                let percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                                
+                                // Apenas adiciona porcentagem para gráficos de pizza e rosca
+                                if (context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut') {
+                                    return context.label + ': ' + value.toLocaleString('pt-BR') + ' (' + percentage + ')';
+                                }
+                                return context.label + ': ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createTableHTML(id, title, icon, dataArray) {
+        let rows = dataArray.map(row => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${row.label}</td>
+                <td style="padding: 10px; font-weight:bold;">${row.total.toLocaleString('pt-BR')}</td>
+            </tr>
+        `).join('');
+
+        return `
+        <div class="chart-container" style="margin-bottom: 20px; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0; font-size: 1.1em;"><span class="chart-icon">${icon}</span> ${title}</h3>
+                <button onclick="downloadCSV('${title.replace(/\\s/g, '_')}', currentTableData['${id}'])" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">📥 Baixar CSV</button>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95em;">
+                <thead><tr style="border-bottom: 2px solid var(--primary); color: var(--primary);">
+                    <th style="padding: 10px;">Categoria</th>
+                    <th style="padding: 10px;">Total</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    function updateKPIs(dTotal, dFamilia, dIdade, dRaca, dRenda, munSelecionado) {
+        const kpiContainer = document.getElementById('kpiContainer');
+        kpiContainer.innerHTML = '';
+
+        const totalPop = dTotal.reduce((acc, curr) => acc + curr.total, 0);
+        
+        // Pega os predominantes
+        const idadePredominante = [...dIdade].sort((a,b) => b.total - a.total)[0];
+        const racaPredominante = [...dRaca].sort((a,b) => b.total - a.total)[0];
+        const rendaPredominante = [...dRenda].sort((a,b) => b.total - a.total)[0];
+        
+        // Mães Solo
+        const maeSoloObj = dFamilia.find(f => f.label === 'Mães Solo');
+        const maesSoloTotal = maeSoloObj ? maeSoloObj.total : 0;
+
+        const kpis = [
+            { icon: '👩🏽', title: 'Total de Mulheres', value: totalPop.toLocaleString('pt-BR'), desc: munSelecionado === 'todos' ? 'No estado (Censo 2022)' : 'No município (Censo 2022)' },
+            { icon: '👩‍👧‍👦', title: 'Mães Solo', value: maesSoloTotal.toLocaleString('pt-BR'), desc: 'Famílias monoparentais femininas' },
+            { icon: '🎂', title: 'Idade Predominante', value: idadePredominante ? idadePredominante.label : '-', desc: idadePredominante ? `${((idadePredominante.total/totalPop)*100).toFixed(1)}% do total` : '' },
+            { icon: '⚫', title: 'Raça Predominante', value: racaPredominante ? racaPredominante.label : '-', desc: racaPredominante ? `${((racaPredominante.total/totalPop)*100).toFixed(1)}% do total` : '' },
+            { icon: '💵', title: 'Renda Predominante', value: rendaPredominante ? rendaPredominante.label : '-', desc: 'Faixa mais comum no CadÚnico' }
+        ];
+
+        kpis.forEach(kpi => {
+            kpiContainer.innerHTML += `
+                <div style="background: #fff; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="font-size: 1.5em;">${kpi.icon}</span>
+                        <h4 style="margin: 0; color: #666; font-size: 0.9em; text-transform: uppercase;">${kpi.title}</h4>
+                    </div>
+                    <div style="font-size: 1.8em; font-weight: bold; color: #1d1d1b;">${kpi.value}</div>
+                    <div style="font-size: 0.8em; color: #888; margin-top: 5px;">${kpi.desc}</div>
+                </div>
+            `;
+        });
+    }
+
+    function updatePerfilView() {
+        const municipio = document.getElementById('municipioFilter').value;
+        
+        // Agregação com regras de ordenação aplicadas
+        const dTotal = aggregateData(rawPerfilData.dadosTotal, municipio);
+        const dIdade = aggregateData(rawPerfilData.dadosIdade, municipio, 'idade'); // Crescente
+        const dEscolaridade = aggregateData(rawPerfilData.dadosEscolaridade, municipio, 'escolaridade'); // Customizada
+        const dRaca = aggregateData(rawPerfilData.dadosRaca, municipio, 'raca'); // Alfabética
+        const dRenda = aggregateData(rawPerfilData.dadosRenda, municipio);
+        const dFamilia = aggregateData(rawPerfilData.dadosFamilia, municipio, 'familia');
+        
+        // Salva para exportação
+        currentTableData = {
+            idade: dIdade, escolaridade: dEscolaridade, raca: dRaca, 
+            renda: dRenda
+        };
+
+        // Renderiza KPIs
+        updateKPIs(dTotal, dFamilia, dIdade, dRaca, dRenda, municipio);
+
+        // Renderiza Gráficos 
+        drawChart('dynamicAgeChart', 'bar', 'Total por Idade', dIdade, chartColors[0]);
+        drawChart('dynamicRaceChart', 'doughnut', 'Raça/Cor', dRaca, chartColors);
+        drawChart('dynamicEducationChart', 'bar', 'Escolaridade', dEscolaridade, chartColors[1]);
+        drawChart('dynamicIncomeChart', 'pie', 'Renda', dRenda, chartColors);
+        
+        // Renderiza Tabelas
+        const tContainer = document.getElementById('tablesContainer');
+        tContainer.innerHTML = 
+            createTableHTML('idade', 'Distribuição por Idade', '🎂', dIdade) +
+            createTableHTML('raca', 'Autodeclaração de Raça/Cor', '⚫', dRaca) +
+            createTableHTML('escolaridade', 'Nível de Escolaridade', '🎓', dEscolaridade) +
+            createTableHTML('renda', 'Faixa de Renda', '💵', dRenda);
+    }
+
+    function downloadCSV(filename, dataArray) {
+        if (!dataArray || dataArray.length === 0) {
+            alert("Não há dados para exportar.");
+            return;
+        }
+        let csvContent = "data:text/csv;charset=utf-8,Categoria,Total\n";
+        dataArray.forEach(row => {
+            const safeLabel = String(row.label).replace(/,/g, " ");
+            csvContent += `${safeLabel},${row.total}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${filename}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    setTimeout(initPerfil, 150);
+</script>

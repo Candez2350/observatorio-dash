@@ -5,17 +5,18 @@ Este projeto é a plataforma interativa do **Observatório do Feminicídio do Ri
 ## 🚀 Tecnologias Utilizadas
 
 - **Node.js & Express.js**: Para o servidor backend e roteamento das páginas.
-- **EJS (Embedded JavaScript)**: Motor de templates (view engine) utilizado para modularizar e renderizar a interface do usuário no lado do servidor.
+- **PostgreSQL (NeonDB)**: Banco de dados relacional em nuvem, utilizado como fonte da verdade para os indicadores. A comunicação é feita utilizando a biblioteca `pg`.
+- **EJS (Embedded JavaScript)**: Motor de templates (view engine) utilizado para modularizar e renderizar a interface do usuário no lado do servidor, permitindo a injeção dos dados do banco nas views.
 - **HTML5 & CSS3 (Vanilla)**: Estruturação e estilização do dashboard, com foco em uma interface limpa, moderna e responsiva.
 - **Chart.js**: Biblioteca JavaScript para a renderização de gráficos interativos (linhas, barras, pizza, radar, etc.) com os dados do observatório.
 - **Fontes**: Utilização primária da fonte **Antenna** (quando disponível no sistema) com fallback para a **Rubik** (via Google Fonts).
 
 ## 📋 Estrutura e Funcionalidades
 
-O sistema está dividido em diferentes "páginas" (rotas) que apresentam contextos específicos dos dados:
+O sistema está dividido em diferentes "páginas" (rotas) que apresentam contextos específicos dos dados. Algumas destas páginas já estão integradas ao banco de dados:
 
 - **🏠 Início**: Apresentação da plataforma e seus pilares.
-- **👤 Perfil e Contexto**: Visão consolidada dos indicadores e perfil sociodemográfico das vítimas.
+- **👤 Perfil e Contexto**: Visão consolidada dos indicadores e perfil sociodemográfico das vítimas. **(Integrado ao DB com filtros e exportação)**
 - **🚪 Portas de Entrada**: Análise dos canais de denúncia e primeiro contato com a rede.
 - **🤝 Rede Especializada**: Dados sobre os serviços especializados de atendimento.
 - **🆘 Apoio e Assistência**: Informações sobre a rede de assistência social e apoio psicossocial.
@@ -42,9 +43,17 @@ O dashboard utiliza uma paleta de cores própria para melhor contraste e leitura
    ```bash
    npm install
    ```
-4. Inicie o servidor em modo de desenvolvimento (usando Nodemon para recarregar automaticamente a cada salvamento):
+4. Crie um arquivo `.env` na raiz do projeto contendo as credenciais de acesso ao banco de dados:
+   ```env
+   DB_USER=seu_usuario
+   DB_PASSWORD=sua_senha
+   DB_HOST=seu_host_do_neon.tech
+   DB_NAME=nome_do_banco
+   DB_PORT=5432
+   ```
+5. Inicie o servidor em modo de desenvolvimento (usando Nodemon para recarregar automaticamente a cada salvamento):
    ```bash
    npm run dev
    ```
-5. Acesse o dashboard no seu navegador através do endereço:
+6. Acesse o dashboard no seu navegador através do endereço:
    **http://localhost:3000**

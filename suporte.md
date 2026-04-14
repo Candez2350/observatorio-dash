@@ -1,26 +1,28 @@
 # Documentação de Suporte e Estrutura do Projeto
 
-Este documento destina-a ser um guia de referência para o desenvolvedor manter, escalar ou consultar o projeto usando ferramentas baseadas em IA (ou trabalhar manualmente). Ele mapeia como os arquivos originais foram separados e qual a lógica por trás da arquitetura atual.
+Este documento destina-se a ser um guia de referência para o desenvolvedor manter, escalar ou consultar o projeto usando ferramentas baseadas em IA (ou trabalhar manualmente). Ele mapeia como os arquivos originais foram separados e qual a lógica por trás da arquitetura atual.
 
 ---
 
 ## 🏗️ Arquitetura de Pastas e Arquivos
 
-O projeto, que antes consistia em um único e gigante arquivo `dashboard.html`, foi fatorado para a seguinte estrutura em Node.js com Express e EJS:
+O projeto, que antes consistia em um único e gigante arquivo `dashboard.html`, foi fatorado para uma estrutura modular em Node.js com Express, EJS e comunicação com um banco de dados PostgreSQL:
 
 ```text
 Observatorio/
 │
-├── package.json              # Configurações do npm, dependências (express, ejs) e scripts (start, dev).
-├── server.js                 # Ponto de entrada do backend. Configura o Express, EJS e as rotas.
-├── README.md                 # Visão geral do projeto.
+├── package.json              # Configurações do npm, dependências (express, ejs, pg, dotenv).
+├── server.js                 # Ponto de entrada do backend. Configura o Express, as rotas e faz as queries no DB.
+├── db.js                     # Configuração do Pool de conexão com o PostgreSQL (NeonDB).
+├── .env                      # Arquivo de variáveis de ambiente com credenciais do banco (não versionado).
+├── README.md                 # Visão geral do projeto e instruções de execução.
 ├── suporte.md                # Este arquivo, focado na parte técnica e estrutural.
 │
 ├── public/                   # Arquivos estáticos servidos diretamente para o navegador.
 │   ├── css/
 │   │   └── style.css         # Todo o estilo da aplicação (variáveis CSS de cores, fontes, layout).
 │   ├── js/
-│   │   └── dashboard-charts.js # Lógica de inicialização e dados de todos os gráficos (Chart.js).
+│   │   └── dashboard-charts.js # (Legado/Em transição) Lógica antiga de inicialização com dados mockados.
 │   └── images/
 │       └── Logo.png          # Logo do projeto.
 │
@@ -37,7 +39,7 @@ Observatorio/
         ├── tipos.ejs
         ├── regiao.ejs
         ├── temporal.ejs
-        ├── perfil.ejs
+        ├── perfil.ejs        # Exemplo de página conectada ao banco, com filtros dinâmicos e exportação CSV.
         ├── rede.ejs
         └── publicacoes.ejs
 ```
@@ -46,10 +48,11 @@ Observatorio/
 
 ## 🔄 Entendendo o Fluxo e Renderização
 
-### 1. O Servidor (`server.js`)
-O Express lida com as requisições GET para as diferentes abas do dashboard. Ele sempre renderiza o arquivo `views/layout.ejs`, mas repassa variáveis essenciais:
-- `page`: Nome da página requisitada (ex: `'panorama'`). O layout usará isso para saber qual arquivo incluir em `<main>`.
-- `data`: Um objeto de contexto (ex: ano selecionado, título geral), garantindo que dados possam ser repassados dinamicamente para os *partials*.
+### 1. O Servidor (`server.js`) e Banco de Dados (`db.js`)
+O Express lida com as requisições GET para as diferentes abas do dashboard. 
+O fluxo agora envolve comunicação com o banco de dados:
+- Rotas específicas (como `/perfil`) importam o `db.js` e realizam queries no PostgreSQL (usando `Promise.all` para performance quando há múltiplas queries).
+- Os resultados do banco são encapsulados em um objeto e passados para o `layout.ejs` (ou renderizados parcialmente se for um carregamento via fetch/AJAX).
 
 ### 2. O Layout (`views/layout.ejs`)
 Este é o esqueleto do HTML. Nele você encontrará:
@@ -58,16 +61,15 @@ Este é o esqueleto do HTML. Nele você encontrará:
 - A injeção dinâmica do conteúdo de cada aba na tag `main`: `<%- include(\`pages/\${page}\`) %>`.
 
 ### 3. As Páginas (`views/pages/`)
-Diferente da versão original com abas escondidas via CSS (`display: none`), cada página agora é carregada independentemente por meio do Node.js. 
-- Isso significa que, se você estiver na rota `/panorama`, o servidor envia apenas o conteúdo do `panorama.ejs` dentro do `layout.ejs`. A página é limpa e foca na visualização.
-- Todos eles foram limpos dos gatilhos antigos `onclick="switchTab(...)"`, substituídos por navegação via link real: `href="/pagina"`.
+As páginas são renderizadas pelo servidor Node.js. 
+- Em páginas conectadas ao banco de dados (ex: `perfil.ejs`), os dados chegam pela variável local `data` do EJS e são injetados de forma segura em uma tag `<script>` utilizando `<%- JSON.stringify(data) %>`.
+- A lógica do `Chart.js` para essas páginas integradas reside *dentro da própria view*, permitindo criar filtros dinâmicos de ano, alternância de visualização (Gráfico/Tabela) e funções de download CSV, substituindo os dados estáticos antigos.
 
 ---
 
 ## 🎨 Como Modificar o Design (Estilos e Fontes)
 
 Todas as cores, animações e responsividade ficam no **`public/css/style.css`**.
-- As fontes definidas são **Antenna** (primeira tentativa) e **Rubik** (segunda, importada via CDN do Google).
 - Para alterar cores globalmente, basta buscar o bloco `:root` no topo do arquivo CSS e ajustar as variáveis HEX:
 
 ```css
@@ -82,25 +84,9 @@ Todas as cores, animações e responsividade ficam no **`public/css/style.css`**
 
 ---
 
-## 📊 Como Modificar os Gráficos
-
-A lógica visual e de inserção de dados do Chart.js vive **inteiramente** no arquivo **`public/js/dashboard-charts.js`**.
-
-**Importante:** Como agora as páginas são carregadas separadamente, os `<canvas>` não ficam mais todos presentes no HTML simultaneamente. Por isso, a inicialização de cada gráfico possui uma trava de segurança.
-
-**Padrão de Segurança para Novos Gráficos:**
-Sempre que adicionar ou alterar um gráfico, certifique-se de que o JS verifica se o elemento existe antes de pegar o contexto:
-```javascript
-const el = document.getElementById('idDoSeuCanvas');
-if (!el) return; // <-- Evita erros se a página atual não possuir esse gráfico
-const ctx = el.getContext('2d');
-```
-
----
-
 ## 🛠️ Dicas para Conversa com a IA
 
 Ao utilizar o ChatGPT/Gemini para manutenções e adições de novas features, basta referenciar arquivos pontualmente usando a lógica desta documentação:
-1. **Adicionar nova aba no dashboard**: "Crie uma nova rota no `server.js` chamada `'/relatorios'`, adicione o botão no `views/partials/header.ejs` e crie o template correspondente em `views/pages/relatorios.ejs`."
-2. **Atualizar dados de um gráfico**: "Altere os dados mockados no `public/js/dashboard-charts.js` na função `initRegiaoCharts()`, atualizando os arrays de data do gráfico X."
-3. **Mudar as cores de uma caixa de informação**: "Acesse `public/css/style.css` e modifique a classe `.data-card`..."
+1. **Adicionar nova aba integrada ao DB**: "Crie uma nova rota no `server.js` chamada `'/relatorios'` que faça um `SELECT` na tabela X. Repasse os dados para o template correspondente em `views/pages/relatorios.ejs`."
+2. **Atualizar visualização de uma página**: "Acesse a view `views/pages/perfil.ejs` e adicione uma nova tabela de exportação CSV usando a variável `data.meuNovoDado`."
+3. **Mudar as configurações do banco**: "As credenciais do NeonDB estão salvas no arquivo local `.env` e são gerenciadas através do `db.js`. O `.env` nunca deve ser compartilhado ou subido para o repositório."

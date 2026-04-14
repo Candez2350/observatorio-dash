@@ -202,7 +202,7 @@
         .main-content {
             position: relative;
             z-index: 1;
-            padding-top: 140px; /* Ajustado para o novo header */
+            padding-top: 60px; /* Ajustado para o novo header */
             transition: opacity 0.3s ease-out;
         }
 
