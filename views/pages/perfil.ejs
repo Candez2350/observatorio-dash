@@ -82,7 +82,7 @@
 
 <script>
     // Correção do erro de parse (EJS injeta dados sem quebrar tags de script usando replace)
-    const rawPerfilData = JSON.parse(`<%- JSON.stringify({
+    var rawPerfilData = JSON.parse(`<%- JSON.stringify({
         dadosTotal: data.dadosTotal || [],
         dadosIdade: data.dadosIdade || [],
         dadosRaca: data.dadosRaca || [],
@@ -91,10 +91,10 @@
         dadosFamilia: data.dadosFamilia || []
     }).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/</g, '\\u003c') %>`);
     
-    let currentTableData = {};
-    let activeCharts = {};
+    var currentTableData = window.currentTableData || {};
+    var activeCharts = window.activeCharts || {};
 
-    const chartColors = ['#3521a4', '#b27ab3', '#ceaacf', '#c33f49', '#d57980', '#1d1d1b', '#f7b2b7', '#9e2a2b', '#540b0e', '#3a0ca3'];
+    var chartColors = ['#3521a4', '#b27ab3', '#ceaacf', '#c33f49', '#d57980', '#1d1d1b', '#f7b2b7', '#9e2a2b', '#540b0e', '#3a0ca3'];
 
     function initPerfil() {
         populateMunicipioDropdown();

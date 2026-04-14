@@ -45,6 +45,15 @@
                 mainContent.innerHTML = html;
                 mainContent.style.opacity = 1;
 
+                // Executa os scripts injetados dinamicamente via AJAX
+                const scripts = mainContent.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
                 // Re-initialize components for the new content
                 animateCounters();
                 animateProgressBars();
