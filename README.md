@@ -57,3 +57,13 @@ O dashboard utiliza uma paleta de cores própria para melhor contraste e leitura
    ```
 6. Acesse o dashboard no seu navegador através do endereço:
    **http://localhost:3000**
+
+## ☁️ Deploy no Vercel
+
+O projeto já está configurado para ser implantado na Vercel utilizando uma *Serverless Function*.
+
+1. Certifique-se de que o arquivo `vercel.json` está presente na raiz do projeto. Ele direciona todo o tráfego do Express para o Vercel.
+2. Ao realizar o deploy no painel da Vercel, acesse **Settings > Environment Variables**.
+3. Adicione todas as chaves e valores presentes no seu arquivo local `.env` (`DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_NAME`, `DB_PORT`).
+4. Realize o deploy. O Vercel fará a renderização das páginas EJS e se comunicará perfeitamente com o NeonDB de forma segura.
+

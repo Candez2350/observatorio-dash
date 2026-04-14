@@ -15,6 +15,7 @@ Observatorio/
 ├── server.js                 # Ponto de entrada do backend. Configura o Express, as rotas e faz as queries no DB.
 ├── db.js                     # Configuração do Pool de conexão com o PostgreSQL (NeonDB).
 ├── .env                      # Arquivo de variáveis de ambiente com credenciais do banco (não versionado).
+├── vercel.json               # Configuração de deploy da Vercel para rodar o Express.js como Serverless Function.
 ├── README.md                 # Visão geral do projeto e instruções de execução.
 ├── suporte.md                # Este arquivo, focado na parte técnica e estrutural.
 │
