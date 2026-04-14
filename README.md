@@ -20,7 +20,7 @@ O sistema está dividido em diferentes "páginas" (rotas) que apresentam context
 - **🚪 Portas de Entrada**: Análise dos canais de denúncia (Ligue 190 e Disque 180) e perfil de envolvidos. **(Integrado ao DB com filtros dinâmicos)**
 - **🤝 Rede Especializada**: Dados sobre os serviços especializados de atendimento.
 - **🆘 Apoio e Assistência**: Informações sobre a rede de assistência social e apoio psicossocial.
-- **🏥 Cuidado e Saúde**: Indicadores relacionados ao atendimento de saúde para vítimas de violência.
+- **🏥 Cuidado e Saúde**: Indicadores do SINAN (notificações) e SIM (mortalidade) integrados ao DB.
 - **🛡️ Proteção e Segurança**: Dados sobre medidas protetivas e o sistema de segurança pública.
 - **⚖️ Direitos e Justiça**: Informações sobre o percurso no sistema de justiça.
 - **⚠️ Falhas na Rede**: Análise de gargalos, descontinuidades e pontos críticos no atendimento.

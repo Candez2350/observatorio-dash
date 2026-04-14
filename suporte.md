@@ -38,7 +38,7 @@ Observatorio/
         ├── inicio.ejs
         ├── panorama.ejs
         ├── portas-de-entrada.ejs # Página de Canais de Denúncia (Integrada ao DB NeonDB).
-        ├── regiao.ejs
+        ├── cuidado-e-saude.ejs   # Página de Cuidado e Saúde (SINAN e SIM) integrada ao DB.
         ├── temporal.ejs
         ├── perfil.ejs        # Exemplo de página conectada ao banco, com filtros dinâmicos e exportação CSV.
         ├── rede.ejs

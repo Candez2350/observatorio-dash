@@ -1,0 +1,382 @@
+    var rawSaudeData = JSON.parse(`<%- JSON.stringify({
+        dadosSinan: data.dadosSinan || [],
+        dadosSim: data.dadosSim || [],
+        listaAnos: data.listaAnos || [],
+        listaMunicipios: data.listaMunicipios || []
+    }).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/</g, '\\u003c') %>`);
+    
+    var currentSaudeTableData = window.currentSaudeTableData || {};
+    var activeSaudeCharts = window.activeSaudeCharts || {};
+
+    var colorsBase = ['#3521a4', '#b27ab3', '#ceaacf', '#c33f49', '#d57980', '#1d1d1b', '#f7b2b7', '#9e2a2b', '#540b0e', '#3a0ca3'];
+
+    function initSaude() {
+        populateSaudeFilters();
+        updateSaudeView();
+    }
+
+    function populateSaudeFilters() {
+        const selAno = document.getElementById('anoFilterSaude');
+        rawSaudeData.listaAnos.forEach(ano => {
+            const op = document.createElement('option');
+            op.value = ano; op.textContent = ano;
+            selAno.appendChild(op);
+        });
+
+        const selMun = document.getElementById('municipioFilterSaude');
+        rawSaudeData.listaMunicipios.forEach(mun => {
+            const op = document.createElement('option');
+            op.value = mun; op.textContent = mun;
+            selMun.appendChild(op);
+        });
+    }
+
+    function toggleViewModeSaude() {
+        const mode = document.getElementById('viewModeFilterSaude').value;
+        if (mode === 'charts') {
+            document.getElementById('saudeChartsView').style.display = 'block';
+            document.getElementById('saudeTablesView').style.display = 'none';
+        } else {
+            document.getElementById('saudeChartsView').style.display = 'none';
+            document.getElementById('saudeTablesView').style.display = 'block';
+        }
+    }
+
+    function isInvalid(val) {
+        if (!val) return true;
+        const v = String(val).toLowerCase();
+        return v.includes('nd') || v.includes('n/d') || v.includes('não informad') || v.includes('ignorado') || v.includes('branco');
+    }
+
+    function sortData(dataArray, type) {
+        if (type === 'idade') {
+            return dataArray.sort((a, b) => {
+                const matchA = a.label.match(/\d+/);
+                const numA = matchA ? parseInt(matchA[0]) : 0;
+                const matchB = b.label.match(/\d+/);
+                const numB = matchB ? parseInt(matchB[0]) : 0;
+                return numA - numB;
+            });
+        }
+        if (type === 'raca') {
+            return dataArray.sort((a, b) => a.label.localeCompare(b.label));
+        }
+        return dataArray.sort((a, b) => b.total - a.total);
+    }
+
+    var simCausaMap = {
+        'X85': 'Agressão por drogas/medicamentos',
+        'X86': 'Agressão por substâncias corrosivas',
+        'X87': 'Agressão por pesticidas',
+        'X88': 'Agressão por gases/vapores',
+        'X89': 'Agressão por outros produtos químicos',
+        'X90': 'Agressão por produtos químicos não especificados',
+        'X91': 'Enforcamento/estrangulamento/sufocação',
+        'X92': 'Afogamento/submersão',
+        'X93': 'Disparo de arma de fogo de mão',
+        'X94': 'Disparo de espingarda/arma maior',
+        'X95': 'Disparo de outra arma de fogo',
+        'X96': 'Material explosivo',
+        'X97': 'Fumaça/fogo/chamas',
+        'X98': 'Vapor/gases/objetos quentes',
+        'X99': 'Objeto cortante ou penetrante',
+        'Y00': 'Objeto contundente',
+        'Y01': 'Projeção de lugar elevado',
+        'Y02': 'Projeção contra objeto em movimento',
+        'Y03': 'Impacto de veículo a motor',
+        'Y04': 'Força corporal',
+        'Y05': 'Agressão sexual por força física',
+        'Y06': 'Negligência e abandono',
+        'Y07': 'Outras síndromes de maus tratos',
+        'Y08': 'Agressão por outros meios',
+        'Y09': 'Agressão por meios não especificados'
+    };
+
+    var sexoAutorMap = {
+        '1': 'Masculino',
+        '2': 'Feminino',
+        '3': 'Ambos os sexos',
+        '9': 'Ignorado'
+    };
+
+    function aggregateSaudeCat(dataset, metricKey, labelKey, ano, mun, mapObj = null) {
+        const result = {};
+        dataset.forEach(row => {
+            if (ano !== 'todos' && String(row.ano_ocorrencia || row.ano_obito) !== String(ano)) return;
+            if (mun !== 'todos' && row.municipio_ocorrencia !== mun) return;
+
+            let rawCat = row[labelKey] || "Indefinido";
+            if (isInvalid(rawCat)) return;
+
+            let cat = mapObj && mapObj[rawCat] ? mapObj[rawCat] : rawCat;
+
+            if (!result[cat]) result[cat] = 0;
+            result[cat] += Number(row[metricKey] || 0);
+        });
+        return Object.keys(result).map(k => ({ label: k, total: result[k] }));
+    }
+
+    function aggregateSaudeBools(dataset, metricKey, boolMappings, ano, mun) {
+        const result = {};
+        Object.values(boolMappings).forEach(label => result[label] = 0);
+
+        dataset.forEach(row => {
+            if (ano !== 'todos' && String(row.ano_ocorrencia) !== String(ano)) return;
+            if (mun !== 'todos' && row.municipio_ocorrencia !== mun) return;
+
+            Object.keys(boolMappings).forEach(col => {
+                if (row[col] === true || row[col] === 'true' || row[col] === 1) {
+                    result[boolMappings[col]] += Number(row[metricKey] || 0);
+                }
+            });
+        });
+        
+        return Object.keys(result).map(k => ({ label: k, total: result[k] })).filter(item => item.total > 0);
+    }
+
+    function drawChartSaude(canvasId, type, title, dataArray, colorConfig, isHorizontal = false) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        
+        if (activeSaudeCharts[canvasId]) activeSaudeCharts[canvasId].destroy();
+
+        const labels = dataArray.map(d => d.label);
+        const values = dataArray.map(d => d.total);
+        let bgColors = Array.isArray(colorConfig) ? colorConfig : Array(labels.length).fill(colorConfig);
+
+        activeSaudeCharts[canvasId] = new Chart(ctx, {
+            type: type,
+            data: { labels: labels, datasets: [{ label: title, data: values, backgroundColor: bgColors, borderWidth: 1 }] },
+            options: {
+                indexAxis: isHorizontal ? 'y' : 'x',
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: (type === 'pie' || type === 'doughnut'), position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let dataset = context.chart.data.datasets[context.datasetIndex].data;
+                                let total = dataset.reduce((a, c) => a + c, 0);
+                                let val = context.raw;
+                                let pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                                return (context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut')
+                                    ? context.label + ': ' + val.toLocaleString('pt-BR') + ' (' + pct + ')'
+                                    : context.label + ': ' + val.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                scales: type === 'bar' ? (isHorizontal ? { x: { beginAtZero: true }, y: { display: true } } : { y: { beginAtZero: true }, x: { display: false } }) : {}
+            }
+        });
+    }
+
+    function createTableSaude(id, title, icon, dataArray) {
+        let rows = dataArray.map(row => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${row.label}</td>
+                <td style="padding: 10px; font-weight:bold;">${row.total.toLocaleString('pt-BR')}</td>
+            </tr>
+        `).join('');
+
+        return `
+        <div class="chart-container" style="margin-bottom: 20px; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0; font-size: 1.1em;"><span class="chart-icon">${icon}</span> ${title}</h3>
+                <button onclick="downloadCSVSaude('${title.replace(/\s/g, '_')}', '${id}')" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">📥 Baixar CSV</button>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95em;">
+                <thead><tr style="border-bottom: 2px solid var(--primary); color: var(--primary);">
+                    <th style="padding: 10px;">Categoria</th>
+                    <th style="padding: 10px;">Total</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    function updateSaudeView() {
+        const ano = document.getElementById('anoFilterSaude').value;
+        const mun = document.getElementById('municipioFilterSaude').value;
+        
+        // --- SINAN ---
+        const totalSinan = rawSaudeData.dadosSinan.reduce((a, r) => {
+            if (ano !== 'todos' && String(r.ano_ocorrencia) !== String(ano)) return a;
+            if (mun !== 'todos' && r.municipio_ocorrencia !== mun) return a;
+            return a + Number(r.qtd_notificacoes || 0);
+        }, 0);
+
+        const repetiuCount = rawSaudeData.dadosSinan.reduce((a, r) => {
+            if (ano !== 'todos' && String(r.ano_ocorrencia) !== String(ano)) return a;
+            if (mun !== 'todos' && r.municipio_ocorrencia !== mun) return a;
+            return a + ((r.violencia_repeticao === true || r.violencia_repeticao === 'true' || r.violencia_repeticao === 1) ? Number(r.qtd_notificacoes) : 0);
+        }, 0);
+
+        const sexismoCount = rawSaudeData.dadosSinan.reduce((a, r) => {
+            if (ano !== 'todos' && String(r.ano_ocorrencia) !== String(ano)) return a;
+            if (mun !== 'todos' && r.municipio_ocorrencia !== mun) return a;
+            return a + (String(r.motivacao).toLowerCase().includes('sexismo') ? Number(r.qtd_notificacoes) : 0);
+        }, 0);
+
+        // Tipos de Violência (Bools)
+        const dSinanTipo = sortData(aggregateSaudeBools(rawSaudeData.dadosSinan, 'qtd_notificacoes', {
+            has_physical_violence: 'Física', has_psychological_violence: 'Psicológica', 
+            has_sexual_violence: 'Sexual', has_neglect: 'Negligência'
+        }, ano, mun), 'default');
+
+        // Meio (Bools)
+        const dSinanMeio = sortData(aggregateSaudeBools(rawSaudeData.dadosSinan, 'qtd_notificacoes', {
+            ag_physical_force: 'Força Física/Espancamento', ag_firearm: 'Arma de Fogo', 
+            ag_sharp_object: 'Arma Branca/Perfurocortante', ag_strangulation: 'Enforcamento/Sufocação'
+        }, ano, mun), 'default');
+
+        // Vínculo (Bools)
+        const dSinanVinculo = sortData(aggregateSaudeBools(rawSaudeData.dadosSinan, 'qtd_notificacoes', {
+            rel_partner: 'Companheiro(a)', rel_ex_partner: 'Ex-companheiro(a)', rel_spouse: 'Cônjuge', 
+            rel_ex_spouse: 'Ex-cônjuge', rel_father: 'Pai', rel_mother: 'Mãe', 
+            rel_friend: 'Amigo/Conhecido', rel_unknown: 'Desconhecido'
+        }, ano, mun), 'default');
+
+        const dSinanVIdade = sortData(aggregateSaudeCat(rawSaudeData.dadosSinan, 'qtd_notificacoes', 'faixa_etaria', ano, mun), 'idade');
+        const dSinanVRaca = sortData(aggregateSaudeCat(rawSaudeData.dadosSinan, 'qtd_notificacoes', 'raca_cor', ano, mun), 'raca');
+        const dSinanVOrientacao = sortData(aggregateSaudeCat(rawSaudeData.dadosSinan, 'qtd_notificacoes', 'orientacao_sexual', ano, mun), 'default');
+        
+        const dSinanAIdade = sortData(aggregateSaudeCat(rawSaudeData.dadosSinan, 'qtd_notificacoes', 'faixa_etaria_autor', ano, mun), 'idade');
+        const dSinanASexo = sortData(aggregateSaudeCat(rawSaudeData.dadosSinan, 'qtd_notificacoes', 'sexo_autor', ano, mun, sexoAutorMap), 'default');
+
+        // --- SIM ---
+        const totalSimAgressao = rawSaudeData.dadosSim.reduce((a, r) => {
+            if (ano !== 'todos' && String(r.ano_obito) !== String(ano)) return a;
+            if (mun !== 'todos' && r.municipio_ocorrencia !== mun) return a;
+            // Contabilizando apenas os códigos de agressão X85 até Y09
+            const c = r.causa_morte || '';
+            if ((c >= 'X85' && c <= 'Y09') || c === 'Negligência' || c === 'Maus tratos') {
+                return a + Number(r.qtd_obitos || 0);
+            }
+            return a;
+        }, 0);
+
+        const dSimCausa = sortData(aggregateSaudeCat(rawSaudeData.dadosSim, 'qtd_obitos', 'causa_morte', ano, mun, simCausaMap), 'default');
+        const dSimLocal = sortData(aggregateSaudeCat(rawSaudeData.dadosSim, 'qtd_obitos', 'local_obito', ano, mun), 'default');
+        const dSimIdade = sortData(aggregateSaudeCat(rawSaudeData.dadosSim, 'qtd_obitos', 'faixa_etaria', ano, mun), 'idade');
+        const dSimRaca = sortData(aggregateSaudeCat(rawSaudeData.dadosSim, 'qtd_obitos', 'raca_cor', ano, mun), 'raca');
+
+        // Renderiza KPIs
+        const kpiC = document.getElementById('kpiContainerSaude');
+        kpiC.innerHTML = '';
+        
+        const locName = mun === 'todos' ? 'No Estado' : mun;
+        const kpis = [
+            { icon: '♀️', title: 'Óbitos por Agressão', value: totalSimAgressao.toLocaleString('pt-BR'), desc: `Mortes no SIM - ${locName}` },
+            { icon: '📝', title: 'Agressões Notificadas', value: totalSinan.toLocaleString('pt-BR'), desc: `Registros SINAN - ${locName}` },
+            { icon: '🔄', title: 'Violência de Repetição', value: repetiuCount.toLocaleString('pt-BR'), desc: totalSinan ? `${((repetiuCount/totalSinan)*100).toFixed(1)}% do total SINAN` : '' },
+            { icon: '♀️', title: 'Motivada por Sexismo', value: sexismoCount.toLocaleString('pt-BR'), desc: totalSinan ? `${((sexismoCount/totalSinan)*100).toFixed(1)}% do total SINAN` : '' },
+            { icon: '⚠️', title: 'Principal Violência', value: dSinanTipo[0] ? dSinanTipo[0].label : '-', desc: dSinanTipo[0] ? `${dSinanTipo[0].total.toLocaleString('pt-BR')} casos (SINAN)` : '' },
+            { icon: '🔪', title: 'Meio Mais Comum', value: dSinanMeio[0] ? dSinanMeio[0].label : '-', desc: dSinanMeio[0] ? `${dSinanMeio[0].total.toLocaleString('pt-BR')} casos (SINAN)` : '' },
+            { icon: '🩸', title: 'Principal Causa Morte', value: dSimCausa[0] ? dSimCausa[0].label : '-', desc: dSimCausa[0] ? `${dSimCausa[0].total.toLocaleString('pt-BR')} óbitos (SIM)` : '' },
+            { icon: '🏥', title: 'Local Frequente Óbito', value: dSimLocal[0] ? dSimLocal[0].label : '-', desc: dSimLocal[0] ? `${dSimLocal[0].total.toLocaleString('pt-BR')} óbitos (SIM)` : '' }
+        ];
+
+        kpis.forEach(kpi => {
+            kpiC.innerHTML += `
+                <div style="background: #fff; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="font-size: 1.5em;">${kpi.icon}</span>
+                        <h4 style="margin: 0; color: #666; font-size: 0.9em; text-transform: uppercase;">${kpi.title}</h4>
+                    </div>
+                    <div style="font-size: 1.6em; font-weight: bold; color: #1d1d1b;">${kpi.value}</div>
+                    <div style="font-size: 0.8em; color: #888; margin-top: 5px;">${kpi.desc}</div>
+                </div>
+            `;
+        });
+
+        // Save Globals
+        currentSaudeTableData = {
+            sTipo: dSinanTipo, sMeio: dSinanMeio, sVinculo: dSinanVinculo,
+            svIdade: dSinanVIdade, svRaca: dSinanVRaca, svOrient: dSinanVOrientacao,
+            saIdade: dSinanAIdade, saSexo: dSinanASexo,
+            simCausa: dSimCausa, simLocal: dSimLocal, simIdade: dSimIdade, simRaca: dSimRaca
+        };
+
+        // Temporal Evolution Line Chart
+        const anosEvolucao = [...rawSaudeData.listaAnos].sort((a,b)=>a-b);
+        const evolucaoSinan = anosEvolucao.map(anoStr => {
+            return rawSaudeData.dadosSinan.reduce((acc, row) => {
+                if (String(row.ano_ocorrencia) === String(anoStr) && (mun === 'todos' || row.municipio_ocorrencia === mun)) {
+                    return acc + Number(row.qtd_notificacoes || 0);
+                }
+                return acc;
+            }, 0);
+        });
+        const evolucaoSim = anosEvolucao.map(anoStr => {
+            return rawSaudeData.dadosSim.reduce((acc, row) => {
+                const c = row.causa_morte || '';
+                const isAgressao = ((c >= 'X85' && c <= 'Y09') || c === 'Negligência' || c === 'Maus tratos');
+                if (isAgressao && String(row.ano_obito) === String(anoStr) && (mun === 'todos' || row.municipio_ocorrencia === mun)) {
+                    return acc + Number(row.qtd_obitos || 0);
+                }
+                return acc;
+            }, 0);
+        });
+
+        if (activeSaudeCharts['chartEvolucaoSaude']) activeSaudeCharts['chartEvolucaoSaude'].destroy();
+        activeSaudeCharts['chartEvolucaoSaude'] = new Chart(document.getElementById('chartEvolucaoSaude').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: anosEvolucao,
+                datasets: [
+                    { label: 'Notificações (SINAN)', data: evolucaoSinan, borderColor: colorsBase[0], backgroundColor: colorsBase[0], tension: 0.1 },
+                    { label: 'Óbitos por Agressão (SIM)', data: evolucaoSim, borderColor: colorsBase[3], backgroundColor: colorsBase[3], tension: 0.1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Draw Charts
+        drawChartSaude('chartSinanTipo', 'pie', 'Tipo de Violência (SINAN)', dSinanTipo, colorsBase);
+        drawChartSaude('chartSinanMeio', 'doughnut', 'Meio da Agressão (SINAN)', dSinanMeio, colorsBase);
+        drawChartSaude('chartSinanVitimaIdade', 'bar', 'Idade da Vítima (SINAN)', dSinanVIdade, colorsBase[0]);
+        drawChartSaude('chartSinanVitimaRaca', 'doughnut', 'Raça/Cor da Vítima (SINAN)', dSinanVRaca, colorsBase);
+        drawChartSaude('chartSinanOrientacao', 'pie', 'Orientação Sexual (SINAN)', dSinanVOrientacao, colorsBase);
+        drawChartSaude('chartSinanVinculo', 'bar', 'Vínculo com o Autor (SINAN)', dSinanVinculo, colorsBase[1]);
+        drawChartSaude('chartSinanAutorIdade', 'bar', 'Idade do Autor (SINAN)', dSinanAIdade, colorsBase[2]);
+        drawChartSaude('chartSinanAutorSexo', 'pie', 'Sexo do Autor (SINAN)', dSinanASexo, colorsBase);
+        
+        drawChartSaude('chartSimCausa', 'bar', 'Causa da Morte (SIM)', dSimCausa, colorsBase[0], true);
+        drawChartSaude('chartSimLocal', 'bar', 'Local do Óbito (SIM)', dSimLocal, colorsBase[3]);
+        drawChartSaude('chartSimIdade', 'bar', 'Idade da Vítima Fatal (SIM)', dSimIdade, colorsBase[0]);
+        drawChartSaude('chartSimRaca', 'pie', 'Raça/Cor da Vítima Fatal (SIM)', dSimRaca, colorsBase);
+
+        // Draw Tables
+        document.getElementById('tablesContainerSaude').innerHTML = 
+            createTableSaude('sTipo', 'Tipo de Violência Atendida', '⚠️', dSinanTipo) +
+            createTableSaude('sMeio', 'Meio da Agressão', '🔪', dSinanMeio) +
+            createTableSaude('svIdade', 'Vítima: Idade', '🎂', dSinanVIdade) +
+            createTableSaude('svRaca', 'Vítima: Raça/Cor', '⚫', dSinanVRaca) +
+            createTableSaude('svOrient', 'Vítima: Orientação Sexual', '🏳️‍🌈', dSinanVOrientacao) +
+            createTableSaude('sVinculo', 'Vínculo com o Autor', '🤝', dSinanVinculo) +
+            createTableSaude('saIdade', 'Autor: Idade', '😠', dSinanAIdade) +
+            createTableSaude('saSexo', 'Autor: Sexo', '♂️', dSinanASexo) +
+            createTableSaude('simCausa', 'Causa da Morte (SIM)', '🩸', dSimCausa) +
+            createTableSaude('simLocal', 'Local do Óbito (SIM)', '🏥', dSimLocal) +
+            createTableSaude('simIdade', 'Vítima Fatal: Idade (SIM)', '🎂', dSimIdade) +
+            createTableSaude('simRaca', 'Vítima Fatal: Raça/Cor (SIM)', '⚫', dSimRaca);
+    }
+
+    function downloadCSVSaude(filename, dataId) {
+        const dataArray = currentSaudeTableData[dataId];
+        if (!dataArray || dataArray.length === 0) { alert("Não há dados para exportar."); return; }
+        let csvContent = "data:text/csv;charset=utf-8,Categoria,Total\n";
+        dataArray.forEach(row => {
+            const safeLabel = String(row.label).replace(/,/g, " ");
+            csvContent += `${safeLabel},${row.total}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${filename}.csv`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    setTimeout(initSaude, 150);

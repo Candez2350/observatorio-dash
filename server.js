@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 // Outras Rotas do Dashboard
-const pages = ['panorama', 'regiao', 'temporal', 'rede', 'publicacoes', 'falhas'];
+const pages = ['panorama', 'temporal', 'rede', 'publicacoes', 'falhas'];
 pages.forEach(page => {
     app.get(`/${page}`, (req, res) => {
         if (req.query.partial) {
@@ -39,6 +39,123 @@ pages.forEach(page => {
 });
 
 const db = require('./db');
+
+app.get('/cuidado-e-saude', async (req, res) => {
+  try {
+    const [
+      qSinan,
+      qSim,
+      qFiltroAnos,
+      qFiltroMunicipios
+    ] = await Promise.all([
+      db.pool.query(`
+        SELECT 
+            d.year AS ano_ocorrencia,
+            l.municipality_name AS municipio_ocorrencia,
+            vp.age_range_name AS faixa_etaria,
+            vp.race_name AS raca_cor,
+            f.victim_sexual_orientation_name AS orientacao_sexual,
+            f.violence_motivation_name AS motivacao,
+            f.is_repeat_violence AS violencia_repeticao,
+            
+            -- Tipo de Violência
+            f.has_physical_violence, 
+            f.has_psychological_violence, 
+            f.has_sexual_violence, 
+            f.has_neglect,
+            
+            -- Meio da Agressão
+            f.ag_physical_force, 
+            f.ag_firearm, 
+            f.ag_sharp_object, 
+            f.ag_strangulation,
+            
+            -- Perfil do Autor
+            f.aggressor_sex_code AS sexo_autor,
+            f.aggressor_age_group_name AS faixa_etaria_autor,
+            
+            -- Vínculo com o Autor
+            f.rel_partner, f.rel_ex_partner, f.rel_spouse, f.rel_ex_spouse, 
+            f.rel_father, f.rel_mother, f.rel_friend, f.rel_unknown,
+            
+            COUNT(f.notification_sk) AS qtd_notificacoes
+        FROM marts.fct_notificacao_violencia f
+        LEFT JOIN marts.dim_date d ON f.occurrence_date_sk = d.date_sk
+        LEFT JOIN marts.dim_location l ON f.occurrence_location_sk = l.location_sk
+        LEFT JOIN marts.dim_victim_profile vp ON f.victim_profile_sk = vp.victim_profile_sk
+        WHERE f.victim_sex = 'F' OR vp.is_female = true
+        GROUP BY 
+            d.year, l.municipality_name, vp.age_range_name, vp.race_name, 
+            f.victim_sexual_orientation_name, f.violence_motivation_name, f.is_repeat_violence,
+            f.has_physical_violence, f.has_psychological_violence, f.has_sexual_violence, f.has_neglect,
+            f.ag_physical_force, f.ag_firearm, f.ag_sharp_object, f.ag_strangulation,
+            f.aggressor_sex_code, f.aggressor_age_group_name,
+            f.rel_partner, f.rel_ex_partner, f.rel_spouse, f.rel_ex_spouse, 
+            f.rel_father, f.rel_mother, f.rel_friend, f.rel_unknown
+        ORDER BY ano_ocorrencia DESC;
+      `),
+      db.pool.query(`
+        SELECT 
+            d.year AS ano_obito,
+            l_oc.municipality_name AS municipio_ocorrencia,
+            l_not.municipality_name AS municipio_residencia,
+            f.death_location_name AS local_obito,
+            vp.race_name AS raca_cor,
+            vp.age_range_name AS faixa_etaria,
+            f.cause_group AS causa_morte,
+            COUNT(f.death_sk) AS qtd_obitos
+        FROM marts.fct_obito_externo f
+        LEFT JOIN marts.dim_date d ON f.death_date_sk = d.date_sk
+        LEFT JOIN marts.dim_location l_oc ON f.occurrence_location_sk = l_oc.location_sk
+        LEFT JOIN marts.dim_location l_not ON f.residence_location_sk = l_not.location_sk
+        LEFT JOIN marts.dim_victim_profile vp ON f.victim_profile_sk = vp.victim_profile_sk
+        WHERE (f.victim_sex = 'F' OR vp.is_female = true)
+          AND (f.is_assault = true OR f.cause_group IN ('Negligência', 'Maus tratos', 'Intervenção legal'))
+        GROUP BY 
+            d.year, l_oc.municipality_name, l_not.municipality_name, f.death_location_name,
+            vp.race_name, vp.age_range_name, f.cause_group
+        ORDER BY ano_obito DESC;
+      `),
+      db.pool.query(`
+        SELECT DISTINCT d.year AS ano
+        FROM marts.fct_notificacao_violencia f
+        JOIN marts.dim_date d ON f.occurrence_date_sk = d.date_sk
+        UNION
+        SELECT DISTINCT d.year AS ano
+        FROM marts.fct_obito_externo f
+        JOIN marts.dim_date d ON f.death_date_sk = d.date_sk
+        ORDER BY ano DESC;
+      `),
+      db.pool.query(`
+        SELECT DISTINCT l.municipality_name AS municipio
+        FROM marts.fct_notificacao_violencia f
+        JOIN marts.dim_location l ON f.occurrence_location_sk = l.location_sk
+        UNION
+        SELECT DISTINCT l.municipality_name AS municipio
+        FROM marts.fct_obito_externo f
+        JOIN marts.dim_location l ON f.occurrence_location_sk = l.location_sk
+        ORDER BY municipio;
+      `)
+    ]);
+
+    const contextData = {
+      ...appData,
+      dadosSinan: qSinan.rows,
+      dadosSim: qSim.rows,
+      listaAnos: qFiltroAnos.rows.map(row => row.ano).filter(ano => ano !== null),
+      listaMunicipios: qFiltroMunicipios.rows.map(row => row.municipio).filter(mun => mun !== null)
+    };
+
+    if (req.query.partial) {
+        res.render('pages/cuidado-e-saude', { data: contextData });
+    } else {
+        res.render('layout', { page: 'cuidado-e-saude', data: contextData });
+    }
+  } catch (err) {
+    console.error("Erro ao carregar dados de Saúde:", err);
+    res.status(500).send("Erro interno ao carregar o painel");
+  }
+});
 
 app.get('/portas-de-entrada', async (req, res) => {
   try {
